@@ -1,386 +1,234 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nemesis Portal</title>
 
 <style>
-  :root{
-    --bg:#050505;
-    --panel: rgba(0,0,0,.55);
-    --line: rgba(255,255,255,.16);
-    --text: rgba(255,255,255,.94);
-    --muted: rgba(255,255,255,.72);
+html,body{
+  margin:0;
+  height:100%;
+  background:
+    radial-gradient(circle at center, #220000 0%, #000 70%);
+  overflow:hidden;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color:#fff;
+}
 
-    --redA: rgba(255,60,60,.95);
-    --redGlow: rgba(255,40,40,.35);
+/* ===== THEME ===== */
+:root{
+  --glowA: rgba(255,40,40,.85);
+  --glowB: rgba(255,0,0,.75);
+  --halo:  rgba(255,0,0,.30);
+  --panel: rgba(0,0,0,.55);
+  --line: rgba(255,255,255,.18);
+}
 
-    --blueA: rgba(80,180,255,.95);
-    --blueGlow: rgba(80,180,255,.35);
-  }
+/* Header */
+header{
+  position:fixed;
+  top:0; left:0; right:0;
+  padding:14px 18px;
+  background: linear-gradient(to bottom, rgba(0,0,0,.85), rgba(0,0,0,.55));
+  backdrop-filter: blur(8px);
+  border-bottom:1px solid var(--line);
+  z-index:10;
+}
+.brand{
+  letter-spacing:.45em;
+  font-weight:800;
+  font-size:14px;
+}
+.sub{
+  margin-top:6px;
+  opacity:.75;
+  font-size:13px;
+}
 
-  html,body{
-    margin:0; height:100%;
-    background:
-      radial-gradient(900px 520px at 10% 0%, rgba(255,60,60,.15), transparent 55%),
-      radial-gradient(900px 520px at 90% 0%, rgba(80,180,255,.15), transparent 55%),
-      radial-gradient(circle at 50% 20%, rgba(255,255,255,.06), transparent 40%),
-      linear-gradient(180deg, #0b0b0b, var(--bg));
-    color: var(--text);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    overflow:hidden;
-  }
+/* Layout */
+main{
+  height:100%;
+  display:grid;
+  place-items:center;
+  padding-top:90px;
+}
+.wrap{
+  width:min(980px,100%);
+  padding:14px;
+  display:grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap:16px;
+}
+@media(max-width:820px){
+  .wrap{ grid-template-columns:1fr; }
+}
 
-  /* Retro grid background */
-  .grid-bg{
-    pointer-events:none;
-    position:fixed; inset:-25%;
-    opacity:.12;
-    background:
-      repeating-linear-gradient(to right, rgba(255,255,255,.22) 0 1px, transparent 1px 44px),
-      repeating-linear-gradient(to bottom, rgba(255,255,255,.22) 0 1px, transparent 1px 44px);
-    transform: perspective(900px) rotateX(62deg) translateY(12%);
-    animation: drift 16s linear infinite;
-  }
-  @keyframes drift{
-    0%{ transform: perspective(900px) rotateX(62deg) translateY(12%) translateX(0); }
-    100%{ transform: perspective(900px) rotateX(62deg) translateY(12%) translateX(60px); }
-  }
+/* Panels */
+.panel{
+  background: var(--panel);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:16px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+}
 
-  header{
-    position:fixed; top:0; left:0; right:0; z-index:10;
-    padding: 14px 16px 12px;
-    background: linear-gradient(to bottom, rgba(0,0,0,.86), rgba(0,0,0,.55));
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--line);
-  }
-  .top{
-    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-  }
-  .brand{
-    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
-  }
-  .brand h1{
-    margin:0;
-    font-size: 15px;
-    letter-spacing: .42em;
-    text-transform: uppercase;
-    text-shadow: 0 0 14px rgba(255,0,0,.20);
-  }
-  .badge{
-    font-size: 12px;
-    color: var(--muted);
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,.05);
-  }
+/* Buttons */
+.links{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+@media(max-width:520px){
+  .links{ grid-template-columns:1fr; }
+}
+a.btn{
+  text-decoration:none;
+  color:#fff;
+  padding:18px 16px;
+  border-radius:18px;
+  font-weight:800;
+  letter-spacing:.04em;
+  border:1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.06);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.6),
+    0 0 26px rgba(255,0,0,.15);
+  transition: transform .12s ease;
+}
+a.btn:hover{ transform: translateY(-1px); }
+a.btn small{
+  display:block;
+  margin-top:6px;
+  opacity:.75;
+  font-size:11px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+}
 
-  .sub{
-    margin-top: 8px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.35;
-  }
+/* ===== NEMESIS EYE ===== */
+.eye-wrap{
+  display:grid;
+  place-items:center;
+  min-height:320px;
+}
 
-  main{
-    height:100%;
-    display:grid;
-    place-items:center;
-    padding: 92px 16px 28px;
-  }
+.eye-body{
+  width:min(48vmin,360px);
+  aspect-ratio:1;
+  border-radius:50%;
+  position:relative;
+  background: radial-gradient(circle at 50% 50%, #444 0%, #1a1a1a 60%, #050505 100%);
+  box-shadow:
+    inset 0 0 0 8px #2b2b2b,
+    inset 0 0 0 14px #111,
+    0 0 90px var(--halo);
+  animation: idleDrift 16s ease-in-out infinite;
+}
+.eye-body::before{
+  content:"";
+  position:absolute;
+  inset:6%;
+  border-radius:50%;
+  background: repeating-radial-gradient(circle,
+    rgba(255,255,255,.06) 0px,
+    rgba(255,255,255,.06) 2px,
+    transparent 3px,
+    transparent 6px);
+  opacity:.25;
+}
+.metal-ring{
+  position:absolute; inset:18%; border-radius:50%;
+  background: radial-gradient(circle, #666 0%, #2a2a2a 55%, #111 100%);
+  box-shadow: inset 0 0 0 6px #555, inset 0 0 0 10px #222;
+}
+.emitter-ring{
+  position:absolute; inset:30%; border-radius:50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.18) 0%, rgba(255,255,255,.05) 10%, rgba(0,0,0,.25) 12%, rgba(0,0,0,0) 18%),
+    radial-gradient(circle, var(--glowA) 0%, rgba(255,255,255,.10) 18%, rgba(0,0,0,.15) 45%, rgba(0,0,0,.85) 72%, rgba(0,0,0,1) 100%);
+  box-shadow: 0 0 42px var(--glowA), inset 0 0 22px var(--glowB);
+  animation: idleGlow 4.5s ease-in-out infinite;
+}
+.lens{
+  position:absolute; inset:38%; border-radius:50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.28), rgba(255,255,255,.06) 25%, #000 55%);
+  box-shadow: inset 0 0 10px rgba(255,255,255,.15), inset 0 0 28px rgba(0,0,0,.95);
+}
 
-  .wrap{
-    width:min(980px, 100%);
-    display:grid;
-    grid-template-columns: 1.05fr .95fr;
-    gap: 14px;
-    align-items:stretch;
-  }
+/* Animations */
+@keyframes idleGlow{
+  0%,100%{ box-shadow: 0 0 28px var(--glowA), inset 0 0 20px var(--glowB); }
+  50%{ box-shadow: 0 0 56px var(--glowA), inset 0 0 28px var(--glowB); }
+}
+@keyframes idleDrift{
+  0%{ transform: translate(0,0) scale(1); }
+  25%{ transform: translate(-0.4%, 0.3%) scale(1.01); }
+  50%{ transform: translate(0.3%, -0.4%) scale(1.015); }
+  75%{ transform: translate(0.2%, 0.4%) scale(1.01); }
+  100%{ transform: translate(0,0) scale(1); }
+}
 
-  @media (max-width: 860px){
-    .wrap{ grid-template-columns: 1fr; }
-  }
-
-  .panel{
-    border: 1px solid var(--line);
-    background: var(--panel);
-    border-radius: 20px;
-    padding: 14px;
-    box-shadow: 0 18px 40px rgba(0,0,0,.45);
-    position:relative;
-    overflow:hidden;
-  }
-  .panel::before{
-    content:"";
-    position:absolute; inset:-40% -20%;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.12), transparent 55%);
-    transform: rotate(10deg);
-    opacity:.8;
-    pointer-events:none;
-  }
-
-  .panel-title{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    margin: 2px 2px 12px;
-    position:relative;
-  }
-  .panel-title h2{
-    margin:0;
-    font-size: 13px;
-    letter-spacing: .26em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.88);
-  }
-  .mini{
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .two-col{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  @media (max-width: 520px){
-    .two-col{ grid-template-columns: 1fr; }
-  }
-
-  a.btn{
-    display:block;
-    text-decoration:none;
-    padding: 16px 14px;
-    border-radius: 18px;
-    color: var(--text);
-    user-select:none;
-    -webkit-tap-highlight-color: transparent;
-    border: 1px solid rgba(255,255,255,.18);
-    background: rgba(255,255,255,.06);
-    box-shadow:
-      0 14px 30px rgba(0,0,0,.35),
-      0 0 0 1px rgba(0,0,0,.55) inset;
-    font-weight: 900;
-    font-size: 15px;
-    letter-spacing: .02em;
-    position: relative;
-    overflow:hidden;
-    transition: transform .12s ease;
-  }
-  a.btn:active{ transform: scale(.99); }
-  a.btn:hover{ transform: translateY(-1px); }
-
-  a.btn::after{
-    content:"";
-    position:absolute;
-    left:-10%;
-    top:-70%;
-    width: 120%;
-    height: 140%;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 55%);
-    transform: rotate(10deg);
-    opacity: .9;
-    pointer-events:none;
-  }
-
-  .btn .small{
-    display:block;
-    margin-top: 7px;
-    font-size: 11px;
-    letter-spacing: .18em;
-    opacity: .78;
-    text-transform: uppercase;
-  }
-
-  .btn.red{
-    border-color: rgba(255,90,90,.45);
-    background: linear-gradient(180deg, rgba(255,60,60,.22), rgba(255,255,255,.05));
-    box-shadow:
-      0 14px 30px rgba(0,0,0,.35),
-      0 0 0 1px rgba(0,0,0,.55) inset,
-      0 0 22px rgba(255,60,60,.18);
-  }
-  .btn.blue{
-    border-color: rgba(140,220,255,.48);
-    background: linear-gradient(180deg, rgba(80,180,255,.22), rgba(255,255,255,.05));
-    box-shadow:
-      0 14px 30px rgba(0,0,0,.35),
-      0 0 0 1px rgba(0,0,0,.55) inset,
-      0 0 22px rgba(80,180,255,.18);
-  }
-
-  .hr{
-    height:1px;
-    background: linear-gradient(to right, transparent, rgba(255,255,255,.20), transparent);
-    margin: 14px 0;
-    position:relative;
-  }
-
-  /* A little “core” orb for flavour */
-  .core{
-    display:grid;
-    place-items:center;
-    min-height: 240px;
-  }
-  .orb{
-    width:min(44vmin, 360px);
-    aspect-ratio:1;
-    border-radius:50%;
-    background:
-      radial-gradient(circle at 35% 30%, rgba(255,255,255,.20), rgba(255,255,255,.06) 25%, rgba(0,0,0,.92) 60%),
-      radial-gradient(circle at 50% 50%, rgba(255,60,60,.18), transparent 55%),
-      radial-gradient(circle at 50% 50%, rgba(80,180,255,.14), transparent 58%);
-    box-shadow:
-      inset 0 0 0 8px rgba(255,255,255,.06),
-      inset 0 0 0 14px rgba(0,0,0,.55),
-      0 0 65px rgba(255,60,60,.14),
-      0 0 65px rgba(80,180,255,.10);
-    position:relative;
-    transform-origin:center;
-    animation: orbDrift 12s ease-in-out infinite;
-  }
-  .orb::before{
-    content:"";
-    position:absolute; inset: 18%;
-    border-radius:50%;
-    background:
-      radial-gradient(circle, rgba(255,255,255,.08), rgba(0,0,0,.95) 60%);
-    box-shadow:
-      0 0 28px rgba(255,60,60,.18),
-      0 0 28px rgba(80,180,255,.14);
-    animation: pulse 3.8s ease-in-out infinite;
-  }
-  .orb::after{
-    content:"";
-    position:absolute; inset:-20%;
-    border-radius:50%;
-    background: conic-gradient(from 180deg,
-      rgba(255,60,60,.0),
-      rgba(255,60,60,.18),
-      rgba(80,180,255,.18),
-      rgba(255,60,60,.0));
-    filter: blur(10px);
-    opacity:.35;
-    animation: spin 10s linear infinite;
-  }
-  @keyframes orbDrift{
-    0%,100%{ transform: translate(0,0) scale(1); }
-    50%{ transform: translate(0.6%, -0.4%) scale(1.01); }
-  }
-  @keyframes pulse{
-    0%,100%{ transform: scale(1); opacity:.9; }
-    50%{ transform: scale(1.08); opacity:1; }
-  }
-  @keyframes spin{
-    0%{ transform: rotate(0deg); }
-    100%{ transform: rotate(360deg); }
-  }
-
-  footer{
-    position:fixed; left:0; right:0; bottom:0;
-    padding: 10px 14px 12px;
-    border-top: 1px solid var(--line);
-    background: linear-gradient(to top, rgba(0,0,0,.86), rgba(0,0,0,.55));
-    backdrop-filter: blur(10px);
-    color: var(--muted);
-    font-size: 12px;
-    display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
-  }
-
-  .kbd{
-    border: 1px solid rgba(255,255,255,.18);
-    background: rgba(255,255,255,.06);
-    padding: 2px 8px;
-    border-radius: 999px;
-    color: rgba(255,255,255,.86);
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    font-size: 11px;
-  }
+/* Footer */
+footer{
+  position:fixed;
+  bottom:0; left:0; right:0;
+  padding:10px 16px;
+  border-top:1px solid var(--line);
+  background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.55));
+  font-size:12px;
+  opacity:.75;
+  display:flex;
+  justify-content:space-between;
+}
 </style>
 </head>
 
 <body>
-<div class="grid-bg"></div>
 
 <header>
-  <div class="top">
-    <div class="brand">
-      <h1>N E M E S I S</h1>
-      <div class="badge">Portal</div>
-    </div>
-    <div class="badge" id="status">SYSTEM: READY</div>
-  </div>
-  <div class="sub">Choose a terminal. Admin sends commands. Display speaks.</div>
+  <div class="brand">N E M E S I S</div>
+  <div class="sub">Portal access · choose your terminal</div>
 </header>
 
 <main>
   <div class="wrap">
     <section class="panel">
-      <div class="panel-title">
-        <h2>Access</h2>
-        <div class="mini">two endpoints</div>
-      </div>
-
-      <div class="two-col">
-        <!-- Change href to ./admin.html if your admin is a file not a folder -->
-        <a class="btn red" href="./admin/">
-          Admin Console
-          <span class="small">control / send lines</span>
+      <div class="links">
+        <a class="btn" href="./admin/">
+          ADMIN CONSOLE
+          <small>control & commands</small>
         </a>
-
-        <!-- Display is your existing display folder -->
-        <a class="btn blue" href="./display/">
-          Display Unit
-          <span class="small">visual / audio output</span>
+        <a class="btn" href="./display/">
+          DISPLAY UNIT
+          <small>visual & audio output</small>
         </a>
       </div>
-
-      <div class="hr"></div>
-
-      <div class="sub" style="position:relative; margin: 0 2px;">
-        Tip: if Display is silent on first load, tap once to unlock audio.
-      </div>
+      <p class="sub" style="margin-top:14px;">
+        Tip: Display requires one tap to unlock audio.
+      </p>
     </section>
 
-    <section class="panel core">
-      <div class="orb" aria-hidden="true"></div>
+    <section class="panel eye-wrap">
+      <div class="eye-body">
+        <div class="metal-ring"></div>
+        <div class="emitter-ring"></div>
+        <div class="lens"></div>
+      </div>
     </section>
   </div>
 </main>
 
 <footer>
-  <div>
-    Shortcuts:
-    <span class="kbd">A</span> Admin
-    <span class="kbd">D</span> Display
-  </div>
+  <div>SYSTEM READY</div>
   <div id="clock">—</div>
 </footer>
 
 <script>
-  // Keyboard shortcuts
-  window.addEventListener("keydown", (e) => {
-    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
-    const k = e.key.toLowerCase();
-    if (k === "a") window.location.href = "./admin/";
-    if (k === "d") window.location.href = "./display/";
-  });
-
-  // Tiny status / clock
-  const clockEl = document.getElementById("clock");
-  const statusEl = document.getElementById("status");
-  function tick(){
-    const d = new Date();
-    clockEl.textContent = d.toLocaleString();
-  }
-  tick();
-  setInterval(tick, 1000);
-
-  // Little flicker to feel alive
-  setInterval(() => {
-    statusEl.textContent = Math.random() > 0.08 ? "SYSTEM: READY" : "SYSTEM: SYNC…";
-  }, 1200);
+const clock = document.getElementById("clock");
+setInterval(()=>{
+  clock.textContent = new Date().toLocaleString();
+},1000);
 </script>
 
 </body>
