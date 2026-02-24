@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CSI Practical Logging Tool</title>
+
+<style>
+  :root{
+    --bg:#050505;
+    --panel: rgba(0,0,0,.55);
+    --line: rgba(255,255,255,.16);
+    --text: rgba(255,255,255,.94);
+    --muted: rgba(255,255,255,.72);
+
+    --redGlow: rgba(255,40,40,.35);
+    --blueGlow: rgba(80,180,255,.35);
+    --greenGlow: rgba(120,255,160,.28);
+    --amberGlow: rgba(255,200,90,.22);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+
+  html,body{
+    margin:0; height:100%;
+    background:
+      radial-gradient(900px 520px at 10% 0%, rgba(255,60,60,.15), transparent 55%),
+      radial-gradient(900px 520px at 90% 0%, rgba(80,180,255,.15), transparent 55%),
+      radial-gradient(circle at 50% 20%, rgba(255,255,255,.06), transparent 40%),
+      linear-gradient(180deg, #0b0b0b, var(--bg));
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    overflow-x:hidden;
+  }
+
+  .grid-bg{
+    pointer-events:none;
+    position:fixed; inset:-25%;
+    opacity:.12;
+    background:
+      repeating-linear-gradient(to right, rgba(255,255,255,.22) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(to bottom, rgba(255,255,255,.22) 0 1px, transparent 1px 44px);
+    transform: perspective(900px) rotateX(62deg) translateY(12%);
+    animation: drift 16s linear infinite;
+  }
+  @keyframes drift{
+    0%{ transform: perspective(900px) rotateX(62deg) translateY(12%) translateX(0); }
+    100%{ transform: perspective(900px) rotateX(62deg) translateY(12%) translateX(60px); }
+  }
+
+  header{
+    position: sticky; top:0; z-index:10;
+    padding: 12px 14px 10px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.86), rgba(0,0,0,.62));
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .top{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  }
+  .brand h1{
+    margin:0;
+    font-size: 14px;
+    letter-spacing: .32em;
+    text-transform: uppercase;
+    text-shadow: 0 0 14px rgba(255,0,0,.18);
+  }
+  .badge{
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.05);
+  }
+  .badge.ok{ border-color: rgba(120,255,160,.30); box-shadow: 0 0 18px var(--greenGlow); }
+  .badge.warn{ border-color: rgba(255,200,90,.28); box-shadow: 0 0 18px var(--amberGlow); }
+
+  .sub{
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  main{ padding: 14px 14px 200px; }
+
+  .panel{
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.45);
+    margin-bottom: 12px;
+  }
+
+  .panel-title{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin: 4px 2px 10px;
+  }
+  .panel-title h2{
+    margin:0;
+    font-size: 12px;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.88);
+  }
+  .mini{
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .hr{
+    height:1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,.20), transparent);
+    margin: 14px 0;
+  }
+
+  .row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:stretch;
+  }
+  .row > *{
+    flex: 1 1 320px;
+    min-width: 260px;
+  }
+  @media (max-width: 720px){
+    .row > *{ min-width: 0; flex-basis: 100%; }
+  }
+
+  label{
+    display:block;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin: 2px 2px 6px;
+  }
+
+  input[type="text"], textarea{
+    width:100%;
+    border-radius: 14px;
+    padding: 12px 12px;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.06);
+    color: var(--text);
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.55) inset;
+    font-size: 14px;
+  }
+  textarea{ min-height: 92px; resize: vertical; line-height: 1.35; }
+
+  .btn{
+    width:100%;
+    padding: 12px 12px;
+    border-radius: 18px;
+    color: var(--text);
+    cursor:pointer;
+    user-select:none;
+    -webkit-tap-highlight-color: transparent;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.06);
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: .02em;
+    position: relative;
+    overflow:hidden;
+    text-align:left;
+  }
+  .btn:active{ transform: scale(.99); }
+  .btn::before{
+    content:"";
+    position:absolute;
+    left:-10%;
+    top:-70%;
+    width: 120%;
+    height: 140%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 55%);
+    transform: rotate(10deg);
+    opacity: .85;
+    pointer-events:none;
+  }
+  .btn .small{
+    display:block;
+    margin-top: 6px;
+    font-size: 11px;
+    letter-spacing: .18em;
+    opacity: .80;
+    text-transform: uppercase;
+  }
+
+  .btn.red{
+    border-color: rgba(255,90,90,.45);
+    background: linear-gradient(180deg, rgba(255,60,60,.20), rgba(255,255,255,.05));
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset,
+      0 0 22px rgba(255,60,60,.16);
+  }
+  .btn.blue{
+    border-color: rgba(140,220,255,.48);
+    background: linear-gradient(180deg, rgba(80,180,255,.20), rgba(255,255,255,.05));
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset,
+      0 0 22px rgba(80,180,255,.16);
+  }
+  .btn.green{
+    border-color: rgba(120,255,160,.34);
+    background: linear-gradient(180deg, rgba(120,255,160,.14), rgba(255,255,255,.05));
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset,
+      0 0 22px rgba(120,255,160,.14);
+  }
+  .btn.amber{
+    border-color: rgba(255,200,90,.30);
+    background: linear-gradient(180deg, rgba(255,200,90,.14), rgba(255,255,255,.05));
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset,
+      0 0 22px rgba(255,200,90,.12);
+  }
+
+  .support-grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:10px;
+  }
+  @media (min-width: 820px){
+    .support-grid{ grid-template-columns: 1fr 1fr; }
+  }
+
+  .support-card{
+    overflow:hidden;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.04);
+    border-radius: 18px;
+    padding: 12px;
+  }
+  .support-card .head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom: 10px;
+  }
+  .support-card .name{
+    font-weight: 900;
+    letter-spacing:.04em;
+  }
+  .pill{
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(0,0,0,.25);
+    white-space:nowrap;
+    flex: 0 0 auto;
+  }
+  .pill.live{
+    border-color: rgba(120,255,160,.30);
+    box-shadow: 0 0 14px rgba(120,255,160,.16);
+    color: rgba(255,255,255,.88);
+  }
+
+  table{
+    width:100%;
+    border-collapse: collapse;
+    overflow:hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(0,0,0,.20);
+  }
+  th, td{
+    padding: 10px 10px;
+    border-bottom: 1px solid rgba(255,255,255,.10);
+    font-size: 13px;
+    vertical-align: top;
+  }
+  th{
+    text-align:left;
+    color: rgba(255,255,255,.86);
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,.04);
+  }
+  tr:last-child td{ border-bottom:none; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,.82);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  }
+  .toast.show{ opacity: 1; }
+
+  footer.actions{
+    position:fixed; left:0; right:0; bottom:0;
+    padding: 10px 14px;
+    background: linear-gradient(to top, rgba(0,0,0,.86), rgba(0,0,0,.60));
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(10px);
+  }
+  .actions .row{ align-items:center; }
+  .actions .row > *{ flex: 1 1 220px; min-width: 200px; }
+  @media (max-width: 720px){
+    .actions .row > *{ flex-basis: 100%; min-width: 0; }
+  }
+
+  .file{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  input[type="file"]{ color: var(--muted); max-width: 100%; }
+</style>
+</head>
+
+<body>
+<div class="grid-bg"></div>
+
+<header>
+  <div class="top">
+    <div class="brand">
+      <h1>CSI PRACTICAL LOGGING TOOL</h1>
+      <div class="badge" id="autosaveBadge">Autosave: off</div>
+    </div>
+    <div class="brand" style="gap:8px;">
+      <div class="badge warn" id="statusBadge">Not started</div>
+      
+    </div>
+  </div>
+  <div class="sub">
+    Tap events to log actions. Support buttons start a countdown timer and log the request.
+  </div>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="panel-title">
+      <h2>Setup</h2>
+      <div class="mini">team + cover story</div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="teamName">Team name</label>
+        <input id="teamName" type="text" placeholder="e.g., Team Sigma" />
+      </div>
+      <div>
+        <label>Scenario control</label>
+        <div class="row">
+          <button class="btn green" id="startBtn">
+            Start scenario
+            <span class="small">logs start time</span>
+          </button>
+          <button class="btn amber" id="finishBtn">
+            Finish scenario
+            <span class="small">logs end time</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <div>
+        <label for="coverStory">Instructor cover story / plot justification</label>
+        <textarea id="coverStory" placeholder="e.g., 'We are food safety inspectors doing a covert check…'"></textarea>
+      </div>
+      <div>
+        <label for="evidence">Evidence seized (notes)</label>
+        <textarea id="evidence" placeholder="List evidence items the group seized…"></textarea>
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="flex:1 1 100%;">
+        <label for="extraNotes">Additional notes / extra information</label>
+        <textarea id="extraNotes" placeholder="Any additional observations, instructor notes, or context…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <h2>Support Calls</h2>
+      <div class="mini">tap to log + start countdown</div>
+    </div>
+
+    <div class="support-grid" id="supportGrid"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <h2>Live log</h2>
+      <div class="mini"><span class="mono" id="logCount">0</span> entries</div>
+    </div>
+
+    <div style="overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:210px;">Time</th>
+            <th style="width:120px;">+Since start</th>
+            <th style="width:160px;">Type</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer class="actions">
+  <div class="row">
+    <button class="btn blue" id="exportCsvBtn">
+      Export CSV
+      <span class="small">for spreadsheet</span>
+    </button>
+    <button class="btn blue" id="exportJsonBtn">
+      Export JSON
+      <span class="small">full fidelity</span>
+    </button>
+    <button class="btn blue" id="exportReportBtn">
+      Export student report (HTML)
+      <span class="small">print / email</span>
+    </button>
+    <button class="btn" id="copyBtn">
+      Copy summary to clipboard
+      <span class="small">quick share</span>
+    </button>
+    <button class="btn red" id="resetBtn">
+      Reset for next group
+      <span class="small">clears autosave + log</span>
+    </button>
+  </div>
+</footer>
+
+<div class="toast" id="toast">Saved</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const toastEl = $("toast");
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toastEl.classList.remove("show"), 900);
+}
+function pad2(n){ return String(n).padStart(2,"0"); }
+function formatClock(ms){
+  const d = new Date(ms);
+  return d.toLocaleString(undefined, {
+    year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", second:"2-digit"
+  });
+}
+function formatSinceStart(now){
+  if(!state.scenarioStart) return "";
+  const diff = Math.max(0, now - state.scenarioStart);
+  const s = Math.floor(diff/1000);
+  const mm = Math.floor(s/60);
+  const ss = s % 60;
+  return `${pad2(mm)}:${pad2(ss)}`;
+}
+function download(filename, text, mime="text/plain"){
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+}
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+/* ---------- state ---------- */
+const STORAGE_KEY = "csi_logging_autosave_v1";
+
+const defaultEvents = [
+  {"id":"spectre","code":"CODE SPECTRE","resource":"Cyberly Paranormal Detection Agency","details":"Investigates unexplained environmental anomalies.","eta_text":"10–15 minutes","eta_max_minutes":15},
+  {"id":"gizmo","code":"CODE GIZMO","resource":"Hazardous Gizmo Response Squad","details":"Handles suspicious or dangerous technical devices.","eta_text":"10 minutes","eta_max_minutes":10},
+  {"id":"steam","code":"CODE STEAM","resource":"Flame & Kettle Brigade","details":"Responds to fire risk or overheating equipment.","eta_text":"5–8 minutes","eta_max_minutes":8},
+  {"id":"blue","code":"CODE BLUE","resource":"Constabulary of Covert Affairs","details":"Secures perimeter and manages public interaction.","eta_text":"8–12 minutes","eta_max_minutes":12},
+  {"id":"critter","code":"CODE CRITTER","resource":"Whiskerwise Pest & Creature Control","details":"Removes wildlife or unexpected creatures.","eta_text":"12 minutes","eta_max_minutes":12},
+  {"id":"canine","code":"CODE CANINE","resource":"Digital Detection Dog & Handler","details":"Locates concealed electronic storage.","eta_text":"15 minutes","eta_max_minutes":15},
+  {"id":"sky","code":"CODE SKY","resource":"SkyEye Drone Capture Unit","details":"Provides aerial observation and rooftop intelligence.","eta_text":"10–15 minutes","eta_max_minutes":15},
+  {"id":"oddtech","code":"CODE ODDTECH","resource":"Unusual Device Assessment Collective","details":"Advises on unfamiliar specialist technology.","eta_text":"15–20 minutes","eta_max_minutes":20},
+  {"id":"signal","code":"CODE SIGNAL","resource":"Signal & Spectrum Recon Team","details":"Conducts wireless scanning and communications detection.","eta_text":"15 minutes","eta_max_minutes":15},
+  {"id":"magnet","code":"CODE MAGNET","resource":"Magnetic & Metallic Sweep Unit","details":"Performs metal detection sweeps.","eta_text":"15 minutes","eta_max_minutes":15},
+  {"id":"fixit","code":"CODE FIXIT","resource":"Chief Fixer and General Problem Solver","details":"Jack-of-all-trades operational support for unexpected complications.","eta_text":"Variable","eta_max_minutes":null}
+];
+
+let state = {
+  version: 1,
+  createdAt: Date.now(),
+  teamName: "",
+  coverStory: "",
+  evidence: "",
+  extraNotes: "",
+  scenarioStart: null,
+  scenarioEnd: null,
+  events: defaultEvents,
+  timers: {}, // eventId -> { running, requestId, arrivalAt|null }
+  log: []
+};
+
+/* ---------- autosave ---------- */
+let autosaveEnabled = true;
+function saveState(silent=false){
+  if(!autosaveEnabled) return;
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    $("autosaveBadge").classList.add("ok");
+    $("autosaveBadge").classList.remove("warn");
+    $("autosaveBadge").textContent = "Autosave: on";
+    if(!silent) toast("Saved");
+  }catch(e){
+    $("autosaveBadge").classList.remove("ok");
+    $("autosaveBadge").classList.add("warn");
+    $("autosaveBadge").textContent = "Autosave: failed";
+    if(!silent) toast("Autosave failed");
+  }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed !== "object") return false;
+    state = { ...state, ...parsed };
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+/* ---------- logging ---------- */
+function addLog(type, detail, extra={}){
+  const entry = {
+    id: (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)),
+    ts: Date.now(),
+    type,
+    detail,
+    ...extra
+  };
+  state.log.push(entry);
+  renderLog();
+  saveState(true);
+  return entry;
+}
+
+function setStatusBadge(){
+  const b = $("statusBadge");
+  if(state.scenarioEnd){
+    b.textContent = "Finished";
+    b.classList.remove("warn");
+    b.classList.add("ok");
+  }else if(state.scenarioStart){
+    b.textContent = "Running";
+    b.classList.remove("warn");
+    b.classList.add("ok");
+  }else{
+    b.textContent = "Not started";
+    b.classList.remove("ok");
+    b.classList.add("warn");
+  }
+}
+
+/* ---------- support rendering ---------- */
+function makeSupportCard(ev){
+  const card = document.createElement("div");
+  card.className = "support-card";
+
+  const head = document.createElement("div");
+  head.className = "head";
+
+  const name = document.createElement("div");
+  name.className = "name";
+  name.textContent = ev.code || "CODE";
+
+  const pill = document.createElement("div");
+  pill.className = "pill";
+  pill.id = `pill_${ev.id}`;
+  pill.textContent = `ETA ${ev.eta_text}`;
+
+  head.appendChild(name);
+  head.appendChild(pill);
+
+  const btn = document.createElement("button");
+  btn.className = "btn blue";
+  btn.innerHTML = `Log request<span class="small">starts countdown</span>`;
+  btn.onclick = () => requestSupport(ev.id);
+
+  const meta = document.createElement("div");
+  meta.className = "mini";
+  meta.style.marginTop = "10px";
+  meta.innerHTML = `<b>${escapeHtml(ev.resource || "")}</b><br>${escapeHtml(ev.details || "")}`.trim();
+
+  card.appendChild(head);
+  card.appendChild(btn);
+  if(ev.resource || ev.details) card.appendChild(meta);
+
+  return card;
+}
+
+function renderSupport(){
+  const grid = $("supportGrid");
+  grid.innerHTML = "";
+  (state.events || []).forEach(ev => grid.appendChild(makeSupportCard(ev)));
+  updateAllPills();
+}
+
+/* ---------- timers ---------- */
+function requestSupport(eventId){
+  const ev = (state.events || []).find(e => e.id === eventId);
+  if(!ev) return;
+
+  if(!state.scenarioStart){
+    toast("Start scenario first");
+    return;
+  }
+
+  const requestId = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()) + "_req");
+
+  const etaMax = (typeof ev.eta_max_minutes === "number" && Number.isFinite(ev.eta_max_minutes))
+    ? Number(ev.eta_max_minutes)
+    : null;
+
+  const arrivalAt = etaMax === null ? null : (Date.now() + etaMax * 60 * 1000);
+
+  state.timers[eventId] = {
+    running: arrivalAt !== null,
+    requestId,
+    arrivalAt
+  };
+
+  const detail = `${(ev.code || "CODE")} — ${ev.resource || ""} (ETA ${ev.eta_text || "—"})`.trim();
+  addLog("support_requested", detail, { eventId: ev.id, etaMinutes: etaMax ?? "", requestId });
+
+  updateAllPills();
+}
+
+function remainingMs(eventId){
+  const t = state.timers[eventId];
+  if(!t || !t.running || !t.arrivalAt) return null;
+  return Math.max(0, t.arrivalAt - Date.now());
+}
+function formatCountdown(ms){
+  const s = Math.ceil(ms/1000);
+  const mm = Math.floor(s/60);
+  const ss = s % 60;
+  return `${pad2(mm)}:${pad2(ss)}`;
+}
+function updatePill(eventId){
+  const pill = document.getElementById(`pill_${eventId}`);
+  if(!pill) return;
+  const ev = (state.events || []).find(e=>e.id===eventId);
+  const t = state.timers[eventId];
+
+  if(!t){
+    pill.classList.remove("live");
+    pill.textContent = ev ? `ETA ${ev.eta_text}` : "ETA";
+    return;
+  }
+
+  // Variable ETA: no countdown
+  if(t.arrivalAt === null){
+    pill.classList.add("live");
+    pill.textContent = "REQUESTED";
+    return;
+  }
+
+  if(t.running){
+    const ms = remainingMs(eventId);
+    pill.classList.add("live");
+    pill.textContent = ms === 0 ? "READY" : `Arrives in ${formatCountdown(ms)}`;
+    if(ms === 0){
+      t.running = false;
+      // Intentionally DO NOT log arrival.
+      saveState(true);
+    }
+    return;
+  }
+
+  pill.classList.add("live");
+  pill.textContent = "READY";
+}
+function updateAllPills(){
+  (state.events || []).forEach(ev => updatePill(ev.id));
+}
+
+/* ---------- log render ---------- */
+function renderLog(){
+  $("logCount").textContent = String(state.log.length);
+  const body = $("logBody");
+  body.innerHTML = "";
+
+  const rows = [...state.log].sort((a,b)=>a.ts-b.ts);
+  for(const e of rows){
+    const tr = document.createElement("tr");
+
+    const tdTime = document.createElement("td");
+    tdTime.className = "mono";
+    tdTime.textContent = formatClock(e.ts);
+
+    const tdSince = document.createElement("td");
+    tdSince.className = "mono";
+    tdSince.textContent = state.scenarioStart ? formatSinceStart(e.ts) : "";
+
+    const tdType = document.createElement("td");
+    tdType.textContent = e.type;
+
+    const tdDet = document.createElement("td");
+    tdDet.textContent = e.detail || "";
+
+    tr.appendChild(tdTime);
+    tr.appendChild(tdSince);
+    tr.appendChild(tdType);
+    tr.appendChild(tdDet);
+    body.appendChild(tr);
+  }
+
+  setStatusBadge();
+}
+
+/* ---------- export ---------- */
+function baseFilename(){
+  const safeTeam = (state.teamName || "team").trim().replaceAll(/[^\w\-]+/g, "_").slice(0, 40) || "team";
+  const d = new Date(state.createdAt || Date.now());
+  const stamp = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}`;
+  return `CSI_${safeTeam}_${stamp}`;
+}
+
+function exportJSON(){
+  const payload = { ...state, exportedAt: Date.now(), exportedAtHuman: formatClock(Date.now()) };
+  download(baseFilename()+".json", JSON.stringify(payload, null, 2), "application/json");
+  toast("JSON exported");
+}
+function toCsvValue(v){
+  const s = String(v ?? "");
+  if(/[,"\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+  return s;
+}
+function exportCSV(){
+  const header = [
+    "team_name","scenario_start","scenario_end","timestamp","since_start","type","detail","event_id","eta_minutes","request_id",
+    "extra_notes"
+  ];
+  const rows = [...state.log].sort((a,b)=>a.ts-b.ts).map(e => ([
+    state.teamName || "",
+    state.scenarioStart ? formatClock(state.scenarioStart) : "",
+    state.scenarioEnd ? formatClock(state.scenarioEnd) : "",
+    formatClock(e.ts),
+    state.scenarioStart ? formatSinceStart(e.ts) : "",
+    e.type,
+    e.detail || "",
+    e.eventId || "",
+    (e.etaMinutes ?? ""),
+    (e.requestId ?? ""),
+    (state.extraNotes || "")
+  ]));
+  const lines = [header, ...rows].map(r => r.map(toCsvValue).join(",")).join("\n");
+  download(baseFilename()+".csv", lines, "text/csv");
+  toast("CSV exported");
+}
+function exportReport(){
+  const now = Date.now();
+  const title = `CSI Practical Report — ${escapeHtml(state.teamName || "Team")}`;
+  const start = state.scenarioStart ? formatClock(state.scenarioStart) : "—";
+  const end = state.scenarioEnd ? formatClock(state.scenarioEnd) : "—";
+  const duration = (state.scenarioStart && state.scenarioEnd) ? formatSinceStart(state.scenarioEnd) : "—";
+  const logRows = [...state.log].sort((a,b)=>a.ts-b.ts).map(e => `
+    <tr>
+      <td class="mono">${escapeHtml(formatClock(e.ts))}</td>
+      <td class="mono">${escapeHtml(state.scenarioStart ? formatSinceStart(e.ts) : "")}</td>
+      <td>${escapeHtml(e.type)}</td>
+      <td>${escapeHtml(e.detail || "")}</td>
+    </tr>
+  `).join("");
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${title}</title>
+<style>
+  body{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial; margin:24px; color:#111; }
+  h1{ margin:0 0 8px; }
+  .meta{ color:#444; margin-bottom:18px; line-height:1.35; }
+  .box{ border:1px solid #ddd; border-radius:12px; padding:14px; margin: 12px 0; }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  table{ width:100%; border-collapse: collapse; margin-top: 8px; }
+  th,td{ border-bottom:1px solid #eee; text-align:left; padding:10px; vertical-align: top; font-size: 14px; }
+  th{ font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color:#333; }
+  @media print{ body{ margin: 10mm; } .box{ break-inside: avoid; } }
+</style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <div class="meta">
+    <div><b>Exported:</b> ${escapeHtml(formatClock(now))}</div>
+    <div><b>Scenario start:</b> <span class="mono">${escapeHtml(start)}</span></div>
+    <div><b>Scenario end:</b> <span class="mono">${escapeHtml(end)}</span></div>
+    <div><b>Duration:</b> <span class="mono">${escapeHtml(duration)}</span></div>
+  </div>
+
+  <div class="box">
+    <h2 style="margin:0 0 8px;">Cover story / plot</h2>
+    <div style="white-space:pre-wrap;">${escapeHtml(state.coverStory || "")}</div>
+  </div>
+
+  <div class="box">
+    <h2 style="margin:0 0 8px;">Evidence seized</h2>
+    <div style="white-space:pre-wrap;">${escapeHtml(state.evidence || "")}</div>
+  </div>
+
+  <div class="box">
+    <h2 style="margin:0 0 8px;">Additional notes</h2>
+    <div style="white-space:pre-wrap;">${escapeHtml(state.extraNotes || "")}</div>
+  </div>
+
+  <div class="box">
+    <h2 style="margin:0 0 8px;">Event log</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:200px;">Time</th>
+          <th style="width:120px;">+Since start</th>
+          <th style="width:160px;">Type</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${logRows || `<tr><td colspan="4">No entries.</td></tr>`}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>`;
+  download(baseFilename()+"_report.html", html, "text/html");
+  toast("Report exported");
+}
+async function copySummary(){
+  const lines = [];
+  lines.push(`CSI Practical — ${state.teamName || "Team"}`);
+  if(state.scenarioStart) lines.push(`Start: ${formatClock(state.scenarioStart)}`);
+  if(state.scenarioEnd) lines.push(`End: ${formatClock(state.scenarioEnd)}`);
+  if(state.coverStory) lines.push(`Cover story: ${state.coverStory.replaceAll(/\s+/g," ").trim()}`);
+  if(state.evidence) lines.push(`Evidence: ${state.evidence.replaceAll(/\s+/g," ").trim()}`);
+  lines.push(`Log entries: ${state.log.length}`);
+  const text = lines.join("\n");
+  try{ await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch(e){ download(baseFilename()+"_summary.txt", text, "text/plain"); toast("Clipboard blocked — saved txt"); }
+}
+
+/* ---------- wiring ---------- */
+function syncInputsFromState(){
+  $("teamName").value = state.teamName || "";
+  $("coverStory").value = state.coverStory || "";
+  $("evidence").value = state.evidence || "";
+  $("extraNotes").value = state.extraNotes || "";
+  $("extraNotes").value = state.extraNotes || "";
+}
+function bind(){
+  $("teamName").addEventListener("input", (e) => { state.teamName = e.target.value; saveState(true); });
+  $("coverStory").addEventListener("input", (e) => { state.coverStory = e.target.value; saveState(true); });
+  $("evidence").addEventListener("input", (e) => { state.evidence = e.target.value; saveState(true); });
+$("extraNotes").addEventListener("input", (e) => { state.extraNotes = e.target.value; saveState(true); });
+
+  $("startBtn").addEventListener("click", () => {
+    if(state.scenarioStart){ toast("Already started"); return; }
+    state.scenarioStart = Date.now();
+    state.scenarioEnd = null;
+    addLog("scenario_started", "Scenario started");
+    saveState();
+  });
+
+  $("finishBtn").addEventListener("click", () => {
+    if(!state.scenarioStart){ toast("Start scenario first"); return; }
+    if(state.scenarioEnd){ toast("Already finished"); return; }
+    state.scenarioEnd = Date.now();
+    addLog("scenario_finished", "Scenario finished");
+    saveState();
+  });
+
+  $("exportCsvBtn").addEventListener("click", exportCSV);
+  $("exportJsonBtn").addEventListener("click", exportJSON);
+  $("exportReportBtn").addEventListener("click", exportReport);
+  $("copyBtn").addEventListener("click", copySummary);
+
+  $("resetBtn").addEventListener("click", () => {
+    const ok = confirm("Reset for next group? This clears team info, notes, log and autosave.");
+    if(!ok) return;
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    state.teamName = "";
+    state.coverStory = "";
+    state.evidence = "";
+    state.extraNotes = "";
+    state.scenarioStart = null;
+    state.scenarioEnd = null;
+    state.timers = {};
+    state.log = [];
+    state.createdAt = Date.now();
+    syncInputsFromState();
+    renderSupport();
+    renderLog();
+    saveState(true);
+    toast("Reset");
+  });
+}
+
+function init(){
+  const hadAutosave = loadState();
+  if(hadAutosave) toast("Autosave restored");
+  $("autosaveBadge").classList.add("ok");
+  $("autosaveBadge").classList.remove("warn");
+  $("autosaveBadge").textContent = "Autosave: on";
+
+  syncInputsFromState();
+  renderSupport();
+  renderLog();
+  setStatusBadge();
+  bind();
+
+  setInterval(updateAllPills, 250);
+}
+init();
+</script>
+
+</body>
+</html>
