@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nemesis Remote</title>
+
+<style>
+  :root{
+    --bg:#050505;
+    --panel: rgba(0,0,0,.55);
+    --line: rgba(255,255,255,.16);
+    --text: rgba(255,255,255,.94);
+    --muted: rgba(255,255,255,.72);
+
+    --redA: rgba(255,60,60,.95);
+    --redB: rgba(255,60,60,.18);
+    --redGlow: rgba(255,40,40,.35);
+
+    --blueA: rgba(80,180,255,.95);
+    --blueB: rgba(80,180,255,.18);
+    --blueGlow: rgba(80,180,255,.35);
+  }
+
+  html,body{
+    margin:0; height:100%;
+    background:
+      radial-gradient(900px 520px at 10% 0%, rgba(255,60,60,.15), transparent 55%),
+      radial-gradient(900px 520px at 90% 0%, rgba(80,180,255,.15), transparent 55%),
+      radial-gradient(circle at 50% 20%, rgba(255,255,255,.06), transparent 40%),
+      linear-gradient(180deg, #0b0b0b, var(--bg));
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    overflow-x:hidden;
+  }
+
+  /* cheesy retro grid */
+  .grid-bg{
+    pointer-events:none;
+    position:fixed; inset:-25%;
+    opacity:.12;
+    background:
+      repeating-linear-gradient(to right, rgba(255,255,255,.22) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(to bottom, rgba(255,255,255,.22) 0 1px, transparent 1px 44px);
+    transform: perspective(900px) rotateX(62deg) translateY(12%);
+    animation: drift 16s linear infinite;
+  }
+  @keyframes drift{
+    0%{ transform: perspective(900px) rotateX(62deg) translateY(12%) translateX(0); }
+    100%{ transform: perspective(900px) rotateX(62deg) translateY(12%) translateX(60px); }
+  }
+
+  header{
+    position: sticky; top:0; z-index:10;
+    padding: 12px 14px 10px;
+    background: linear-gradient(to bottom, rgba(0,0,0,.86), rgba(0,0,0,.62));
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .top{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  }
+  .brand h1{
+    margin:0;
+    font-size: 15px;
+    letter-spacing: .42em;
+    text-transform: uppercase;
+    text-shadow: 0 0 14px rgba(255,0,0,.20);
+  }
+  .badge{
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.05);
+  }
+
+  .legend{
+    display:flex; align-items:center; gap:10px;
+    font-size: 12px; color: var(--muted);
+    letter-spacing:.12em; text-transform:uppercase;
+  }
+  .dot{
+    width:10px; height:10px; border-radius:50%;
+    background: rgba(255,255,255,.25);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset;
+  }
+  .dot.red{ background: rgba(255,70,70,.95); box-shadow: 0 0 14px var(--redGlow); }
+  .dot.blue{ background: rgba(80,180,255,.95); box-shadow: 0 0 14px var(--blueGlow); }
+
+  .sub{
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  main{ padding: 14px 14px 96px; }
+
+  .panel{
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  }
+
+  .panel-title{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin: 4px 2px 10px;
+  }
+  .panel-title h2{
+    margin:0;
+    font-size: 13px;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.88);
+  }
+  .mini{
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .two-col{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* glossy, classic HTML vibes */
+  .btn{
+    width:100%;
+    padding: 14px 12px;
+    border-radius: 18px;
+    color: var(--text);
+    cursor:pointer;
+    user-select:none;
+    -webkit-tap-highlight-color: transparent;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.06);
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset;
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: .02em;
+    position: relative;
+    overflow:hidden;
+    text-align:left;
+  }
+  .btn:active{ transform: scale(.99); }
+
+  .btn::before{
+    content:"";
+    position:absolute;
+    left:-10%;
+    top:-70%;
+    width: 120%;
+    height: 140%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.24), transparent 55%);
+    transform: rotate(10deg);
+    opacity: .85;
+    pointer-events:none;
+  }
+
+  .btn .small{
+    display:block;
+    margin-top: 6px;
+    font-size: 11px;
+    letter-spacing: .18em;
+    opacity: .78;
+    text-transform: uppercase;
+  }
+
+  .btn.red{
+    border-color: rgba(255,90,90,.45);
+    background: linear-gradient(180deg, rgba(255,60,60,.22), rgba(255,255,255,.05));
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset,
+      0 0 22px rgba(255,60,60,.18);
+  }
+  .btn.blue{
+    border-color: rgba(140,220,255,.48);
+    background: linear-gradient(180deg, rgba(80,180,255,.22), rgba(255,255,255,.05));
+    box-shadow:
+      0 14px 30px rgba(0,0,0,.35),
+      0 0 0 1px rgba(0,0,0,.55) inset,
+      0 0 22px rgba(80,180,255,.18);
+  }
+
+  .hr{
+    height:1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,.20), transparent);
+    margin: 14px 0;
+  }
+
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,.82);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  }
+  .toast.show{ opacity: 1; }
+</style>
+</head>
+
+<body>
+<div class="grid-bg"></div>
+
+<header>
+  <div class="top">
+    <div class="brand">
+      <h1>N E M E S I S</h1>
+      <div class="badge">Remote</div>
+    </div>
+    <div class="legend">
+      <span class="dot red"></span> Nemesis
+      <span class="dot blue"></span> Lord Pix
+    </div>
+  </div>
+  <div class="sub">Tap a line → TV speaks. Red = menace. Blue = help.</div>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="panel-title">
+      <h2>Nemesis</h2>
+      <div class="mini">RED buttons</div>
+    </div>
+    <div class="two-col" id="nemesis"></div>
+
+    <div class="hr"></div>
+
+    <div class="panel-title">
+      <h2>Lord Pix</h2>
+      <div class="mini">BLUE buttons</div>
+    </div>
+    <div class="two-col" id="pix"></div>
+
+    <div class="hr"></div>
+
+    <div class="two-col">
+      <button class="btn" onclick="send('stop')">
+        Stop Audio
+        <span class="small">STOP</span>
+      </button>
+      <button class="btn" onclick="send('test')">
+        Test Ping
+        <span class="small">TEST</span>
+      </button>
+    </div>
+
+    <div class="sub" style="margin-top:12px;">
+      If the TV is silent: tap the display page once to enable audio.
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast">Sent</div>
+
+<script>
+/* =========================
+   CONFIG
+========================= */
+const DB_BASE = "https://nemesis-vvi-default-rtdb.firebaseio.com";
+const COMMAND_PATH = "/command/current";
+
+/* =========================
+   VOICELINES
+   (button label is short, full text is in the small line)
+========================= */
+const nemesisLines = [
+  { id:"nemesis_radio_off", label:"Radio off", sub:"Someone turn that radio off" },
+  { id:"nemesis_clock_ticking", label:"Clock", sub:"The clock's ticking" },
+  { id:"nemesis_dont_look_there", label:"Don't look", sub:"Don't look over there" },
+  { id:"nemesis_intro_10_min", label:"Intro (10m)", sub:"Intruders... I'm Nemesis... you have 10 minutes..." },
+  { id:"nemesis_goodbye_intruders", label:"Goodbye", sub:"Goodbye intruders, parting is such sweet sorrow..." },
+  { id:"nemesis_board_pins", label:"Pins board", sub:"Stay away from that board with the pins" },
+  { id:"nemesis_drawer", label:"Drawer", sub:"I wouldn't look in the drawer if I were you" },
+  { id:"nemesis_ada_babbage", label:"Ada/Babbage", sub:"Leave Ada and Babbage alone!" },
+  { id:"nemesis_bag", label:"That bag", sub:"What are you putting in that bag?" },
+  { id:"nemesis_dont_touch", label:"Don't touch", sub:"Don't touch that!" },
+  { id:"nemesis_best_angle", label:"Best angle", sub:"If you're drawing pictures of me..." },
+  { id:"nemesis_dog", label:"Dog?!", sub:"What's that dog doing in here?!" },
+  { id:"nemesis_radio_who", label:"Radio chat", sub:"Who are you talking to on that radio?" },
+  { id:"nemesis_interference", label:"Interference", sub:"What's this interference coming through?" },
+  { id:"nemesis_1_min_left", label:"1 minute", sub:"1 minute left, how fun!" }
+];
+
+const pixLines = [
+  { id:"pix_bypass", label:"Bypass", sub:"I bypassed Nemesis temporarily..." },
+  { id:"pix_clue", label:"Clue", sub:"I understand you want a clue" },
+  { id:"pix_cyber_hound", label:"Cyber Hound", sub:"Cyber Hound incoming!" },
+  { id:"pix_acpo", label:"ACPO", sub:"Don't forget ACPO" },
+  { id:"pix_cant_say", label:"Can't say", sub:"I can't tell you that in front of Nemesis!" },
+  { id:"pix_box", label:"Try box", sub:"Have you tried looking in the box?" },
+  { id:"pix_over_there", label:"Over there", sub:"Have you looked over there?" },
+  { id:"pix_leave_found", label:"Leave it", sub:"Remember to leave things as you found them!" }
+];
+
+/* =========================
+   RENDER BUTTONS
+========================= */
+function makeBtn(line, color){
+  const b = document.createElement("button");
+  b.className = `btn ${color}`;
+  b.innerHTML = `${escapeHtml(line.label)}<span class="small">${escapeHtml(line.sub)}</span>`;
+  b.onclick = () => send(line.id);
+  return b;
+}
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+const nemesisEl = document.getElementById("nemesis");
+const pixEl = document.getElementById("pix");
+
+nemesisLines.forEach(l => nemesisEl.appendChild(makeBtn(l, "red")));
+pixLines.forEach(l => pixEl.appendChild(makeBtn(l, "blue")));
+
+/* =========================
+   SEND COMMAND
+========================= */
+const toast = document.getElementById("toast");
+let toastTimer = null;
+
+function showToast(text){
+  toast.textContent = text;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove("show"), 900);
+}
+
+async function send(clip){
+  const payload = { clip, ts: Date.now() };
+  try{
+    const res = await fetch(DB_BASE + COMMAND_PATH + ".json", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    showToast("Sent: " + clip);
+  }catch(e){
+    showToast("Failed: check DB rules/URL");
+  }
+}
+</script>
+
+</body>
+</html>
