@@ -9,8 +9,7 @@
 html,body{
   margin:0;
   height:100%;
-  background:
-    radial-gradient(circle at center, #220000 0%, #000 70%);
+  background: radial-gradient(circle at center, #220000 0%, #000 70%);
   overflow:hidden;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   color:#fff;
@@ -79,9 +78,10 @@ main{
   grid-template-columns:1fr 1fr;
   gap:14px;
 }
-@media(max-width:520px){
+@media(max-width:650px){
   .links{ grid-template-columns:1fr; }
 }
+
 a.btn{
   text-decoration:none;
   color:#fff;
@@ -94,9 +94,23 @@ a.btn{
   box-shadow:
     inset 0 0 0 1px rgba(0,0,0,.6),
     0 0 26px rgba(255,0,0,.15);
-  transition: transform .12s ease;
+  transition: transform .12s ease, filter .12s ease;
+  position:relative;
+  overflow:hidden;
 }
-a.btn:hover{ transform: translateY(-1px); }
+a.btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+a.btn:active{ transform: translateY(0px) scale(.995); }
+
+a.btn::after{
+  content:"";
+  position:absolute;
+  inset:-40% -30%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), transparent 60%);
+  transform: rotate(10deg);
+  opacity:.9;
+  pointer-events:none;
+}
+
 a.btn small{
   display:block;
   margin-top:6px;
@@ -104,6 +118,16 @@ a.btn small{
   font-size:11px;
   letter-spacing:.2em;
   text-transform:uppercase;
+}
+
+/* Tag colors */
+a.btn.admin{ border-color: rgba(255,110,110,.45); }
+a.btn.display{ border-color: rgba(255,140,140,.42); }
+a.btn.logger{
+  border-color: rgba(255,210,120,.46);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.6),
+    0 0 26px rgba(255,180,80,.18);
 }
 
 /* ===== NEMESIS EYE ===== */
@@ -180,6 +204,20 @@ footer{
   opacity:.75;
   display:flex;
   justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.kbd{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.06);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  opacity:.9;
 }
 </style>
 </head>
@@ -195,22 +233,31 @@ footer{
   <div class="wrap">
     <section class="panel">
       <div class="links">
-        <a class="btn" href="./admin/">
+        <!-- Change href to ./admin.html if your admin is a file not a folder -->
+        <a class="btn admin" href="./admin/">
           ADMIN CONSOLE
           <small>control & commands</small>
         </a>
-        <a class="btn" href="./display/">
+
+        <a class="btn display" href="./display/">
           DISPLAY UNIT
           <small>visual & audio output</small>
         </a>
+
+        <!-- Logger: change href if your logger path differs -->
+        <a class="btn logger" href="./logger/">
+          LOGGER
+          <small>record events during practical</small>
+        </a>
       </div>
+
       <p class="sub" style="margin-top:14px;">
         Tip: Display requires one tap to unlock audio.
       </p>
     </section>
 
     <section class="panel eye-wrap">
-      <div class="eye-body">
+      <div class="eye-body" aria-hidden="true">
         <div class="metal-ring"></div>
         <div class="emitter-ring"></div>
         <div class="lens"></div>
@@ -220,15 +267,32 @@ footer{
 </main>
 
 <footer>
-  <div>SYSTEM READY</div>
+  <div>
+    Shortcuts:
+    <span class="kbd">A</span> Admin
+    <span class="kbd">D</span> Display
+    <span class="kbd">L</span> Logger
+  </div>
   <div id="clock">—</div>
 </footer>
 
 <script>
-const clock = document.getElementById("clock");
-setInterval(()=>{
-  clock.textContent = new Date().toLocaleString();
-},1000);
+  // Keyboard shortcuts (don’t trigger while typing)
+  window.addEventListener("keydown", (e) => {
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+
+    const k = e.key.toLowerCase();
+    if (k === "a") window.location.href = "./admin/";
+    if (k === "d") window.location.href = "./display/";
+    if (k === "l") window.location.href = "./logger/";
+  });
+
+  // Clock
+  const clock = document.getElementById("clock");
+  function tick(){ clock.textContent = new Date().toLocaleString(); }
+  tick();
+  setInterval(tick, 1000);
 </script>
 
 </body>
