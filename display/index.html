@@ -119,7 +119,7 @@ body.theme-blue{
   color:#fff;
   text-align:center;
   cursor:pointer;
-  touch-action: manipulation; /* helps on some devices */
+  touch-action: manipulation;
 }
 .overlay h1{ letter-spacing:.4em; font-size:26px; margin:0 0 10px; }
 .overlay p{
@@ -147,7 +147,10 @@ body.theme-blue{
 <div class="overlay" id="overlay">
   <div>
     <h1>NEMESIS</h1>
-    <p id="overlayText">Tap to enable audio (required once).<br><small>Tip: make sure /audio/test.mp3 exists.</small></p>
+    <p id="overlayText">
+      Tap to enable audio (required once).<br>
+      <small>Tip: make sure <code>display/audio/test.mp3</code> exists.</small>
+    </p>
   </div>
 </div>
 
@@ -194,8 +197,9 @@ const lineText = {
   pix_leave_found: "Remember to leave things as you found them!"
 };
 
-/* Audio: load by ID on demand (so you don't have to pre-list everything) */
+/* Audio: load by ID on demand */
 function audioFor(id){
+  // From display/index.html, this resolves to display/audio/<id>.mp3
   return new Audio(`audio/${id}.mp3`);
 }
 
@@ -224,18 +228,25 @@ function stopAll(){
   eye.classList.remove("speaking");
 }
 
-/* Unlock handler — listens to multiple event types */
+/* Unlock handler (single event; avoids double-fire on mobile) */
 async function unlockAudio(e){
   e?.preventDefault?.();
 
-  // Visible feedback so you can confirm the tap is registered
   overlayText.innerHTML = "Unlocking audio…";
 
   try{
-    // IMPORTANT: you must have this file
+    // IMPORTANT: this file must exist at display/audio/test.mp3
     const unlock = new Audio("audio/test.mp3");
-    unlock.volume = 0;
-    await unlock.play();
+    unlock.preload = "auto";
+    unlock.volume = 0.01;   // not 0 (some browsers dislike silent unlock)
+    unlock.muted = false;
+
+    // Helps on iOS/Safari in some cases
+    unlock.load();
+
+    const p = unlock.play();
+    if (p && p.then) await p;
+
     unlock.pause();
     unlock.currentTime = 0;
 
@@ -248,23 +259,21 @@ async function unlockAudio(e){
 
     overlayText.innerHTML =
       "Unlock failed.<br>" +
-      "Make sure <b>/audio/test.mp3</b> exists and is reachable on this device.<br>" +
-      "<small>Try opening it directly in the browser first.</small>";
+      "Try opening <b>audio/test.mp3</b> directly (it should be in this page’s <code>audio/</code> folder).<br>" +
+      "<small>Open DevTools Console for details.</small>";
+
+    console.error("Unlock error:", err);
   }
 }
 
-/* Attach robust listeners */
-overlay.addEventListener("pointerdown", unlockAudio);
-overlay.addEventListener("touchstart", unlockAudio, { passive: false });
-overlay.addEventListener("click", unlockAudio);
+/* Attach ONE robust listener (prevents triple-trigger) */
+overlay.addEventListener("pointerdown", unlockAudio, { once: true });
 
 /* Play */
 function playClip(id){
   if(!audioEnabled) return;
 
   if(id.startsWith("pix_")) setThemeBlueFor(10000);
-
-  // If you want subtitles later, we can re-add them; keeping this minimal/robust for now.
 
   stopAll();
 
@@ -281,12 +290,16 @@ function playClip(id){
   a.addEventListener("ended", stop, { once:true });
   a.addEventListener("pause", stop, { once:true });
 
-  a.play().catch(() => {
+  a.play().catch((err) => {
+    console.error("Audio play error:", err);
+
     // only show overlay if we never successfully unlocked
     if(!audioUnlockedOnce){
       audioEnabled = false;
       overlay.style.display = "grid";
       overlayText.innerHTML = "Tap to enable audio.";
+      // Re-arm the unlock listener if overlay is shown again
+      overlay.addEventListener("pointerdown", unlockAudio, { once: true });
     }
     stop();
   });
