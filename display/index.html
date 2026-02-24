@@ -196,7 +196,7 @@ const lineText = {
 
 /* Audio: load by ID on demand (so you don't have to pre-list everything) */
 function audioFor(id){
-  return new Audio(`/audio/${id}.mp3`);
+  return new Audio(`audio/${id}.mp3`);
 }
 
 /* Fullscreen */
@@ -233,7 +233,7 @@ async function unlockAudio(e){
 
   try{
     // IMPORTANT: you must have this file
-    const unlock = new Audio("/audio/test.mp3");
+    const unlock = new Audio("audio/test.mp3");
     unlock.volume = 0;
     await unlock.play();
     unlock.pause();
