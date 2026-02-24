@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nemesis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  background: radial-gradient(circle at center, #220000 0%, #000 70%);
+  overflow:hidden;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.stage{ height:100%; display:grid; place-items:center; }
+
+/* ===== THEME (red/blue) ===== */
+:root{
+  --glowA: rgba(255,40,40,.85);
+  --glowB: rgba(255,0,0,.80);
+  --halo:  rgba(255,0,0,.28);
+}
+body.theme-blue{
+  background: radial-gradient(circle at center, #001122 0%, #000 70%);
+  --glowA: rgba(80,180,255,.90);
+  --glowB: rgba(80,180,255,.75);
+  --halo:  rgba(80,180,255,.26);
+}
+
+/* Eye */
+.eye-body{
+  width:min(70vmin,520px);
+  aspect-ratio:1;
+  border-radius:50%;
+  position:relative;
+  background: radial-gradient(circle at 50% 50%, #444 0%, #1a1a1a 60%, #050505 100%);
+  box-shadow:
+    inset 0 0 0 8px #2b2b2b,
+    inset 0 0 0 14px #111,
+    0 0 95px var(--halo);
+  transform-origin:center;
+  animation: idleDrift 18s ease-in-out infinite;
+}
+.eye-body::before{
+  content:"";
+  position:absolute;
+  inset:6%;
+  border-radius:50%;
+  background: repeating-radial-gradient(circle,
+    rgba(255,255,255,.06) 0px,
+    rgba(255,255,255,.06) 2px,
+    transparent 3px,
+    transparent 6px);
+  opacity:.25;
+}
+.metal-ring{
+  position:absolute; inset:18%; border-radius:50%;
+  background: radial-gradient(circle, #666 0%, #2a2a2a 55%, #111 100%);
+  box-shadow: inset 0 0 0 6px #555, inset 0 0 0 10px #222;
+}
+.emitter-ring{
+  position:absolute; inset:30%; border-radius:50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.18) 0%, rgba(255,255,255,.05) 10%, rgba(0,0,0,.25) 12%, rgba(0,0,0,0) 18%),
+    radial-gradient(circle, var(--glowA) 0%, rgba(255,255,255,.10) 18%, rgba(0,0,0,.15) 45%, rgba(0,0,0,.85) 72%, rgba(0,0,0,1) 100%);
+  box-shadow: 0 0 44px var(--glowA), inset 0 0 22px var(--glowB);
+  animation: idleGlow 4.5s ease-in-out infinite;
+}
+.lens{
+  position:absolute; inset:38%; border-radius:50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.28), rgba(255,255,255,.06) 25%, #000 55%);
+  box-shadow: inset 0 0 10px rgba(255,255,255,.15), inset 0 0 28px rgba(0,0,0,.95);
+}
+.speaking .emitter-ring{ animation: speak .22s ease-in-out infinite; }
+
+@keyframes idleGlow{
+  0%,100%{ box-shadow: 0 0 26px rgba(255,255,255,.08), 0 0 30px var(--glowA), inset 0 0 20px var(--glowB); }
+  50%{ box-shadow: 0 0 26px rgba(255,255,255,.10), 0 0 56px var(--glowA), inset 0 0 26px var(--glowB); }
+}
+@keyframes idleDrift{
+  0%{ transform: translate(0,0) scale(1); }
+  25%{ transform: translate(-0.4%, 0.3%) scale(1.005); }
+  50%{ transform: translate(0.3%, -0.4%) scale(1.01); }
+  75%{ transform: translate(0.2%, 0.4%) scale(1.005); }
+  100%{ transform: translate(0,0) scale(1); }
+}
+@keyframes speak{
+  0%,100%{ transform: scale(1); }
+  50%{ transform: scale(1.08); }
+}
+
+/* UI */
+.label{
+  position:fixed; bottom:22px; left:22px;
+  letter-spacing:.45em;
+  color:rgba(255,255,255,.9);
+  font-size:18px; font-weight:800;
+  user-select:none;
+  text-shadow: 0 0 12px rgba(255,0,0,.20);
+}
+.fs{
+  position:fixed; bottom:18px; right:18px;
+  padding:10px 14px;
+  border-radius:14px;
+  background: rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.18);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* Overlay */
+.overlay{
+  position:fixed; inset:0;
+  display:grid; place-items:center;
+  background: rgba(0,0,0,.75);
+  color:#fff;
+  text-align:center;
+  cursor:pointer;
+  touch-action: manipulation; /* helps on some devices */
+}
+.overlay h1{ letter-spacing:.4em; font-size:26px; margin:0 0 10px; }
+.overlay p{
+  opacity:.85;
+  max-width:560px;
+  line-height:1.45;
+  margin:0;
+  padding:0 18px;
+}
+</style>
+</head>
+
+<body>
+<div class="stage">
+  <div class="eye-body" id="eye">
+    <div class="metal-ring"></div>
+    <div class="emitter-ring"></div>
+    <div class="lens"></div>
+  </div>
+</div>
+
+<div class="label">N E M E S I S</div>
+<button class="fs" id="fsBtn">Fullscreen</button>
+
+<div class="overlay" id="overlay">
+  <div>
+    <h1>NEMESIS</h1>
+    <p id="overlayText">Tap to enable audio (required once).<br><small>Tip: make sure /audio/test.mp3 exists.</small></p>
+  </div>
+</div>
+
+<script>
+/* Firebase */
+const DB_BASE = "https://nemesis-vvi-default-rtdb.firebaseio.com";
+const COMMAND_PATH = "/command/current";
+
+/* DOM */
+const eye = document.getElementById("eye");
+const overlay = document.getElementById("overlay");
+const overlayText = document.getElementById("overlayText");
+const fsBtn = document.getElementById("fsBtn");
+
+let audioEnabled = false;
+let audioUnlockedOnce = false;
+let lastTimestamp = 0;
+let themeTimer = null;
+
+/* Minimal line text (optional; safe if missing) */
+const lineText = {
+  nemesis_radio_off: "Someone turn that radio off",
+  nemesis_clock_ticking: "The clock's ticking",
+  nemesis_dont_look_there: "Don't look over there",
+  nemesis_intro_10_min: "Intruders... I'm Nemesis... you have 10 minutes...",
+  nemesis_goodbye_intruders: "Goodbye intruders, parting is such sweet sorrow...",
+  nemesis_board_pins: "Stay away from that board with the pins",
+  nemesis_drawer: "I wouldn't look in the drawer if I were you",
+  nemesis_ada_babbage: "Leave Ada and Babbage alone!",
+  nemesis_bag: "What are you putting in that bag?",
+  nemesis_dont_touch: "Don't touch that!",
+  nemesis_best_angle: "If you're drawing pictures of me...",
+  nemesis_dog: "What's that dog doing in here?!",
+  nemesis_radio_who: "Who are you talking to on that radio?",
+  nemesis_interference: "What's this interference coming through?",
+  nemesis_1_min_left: "1 minute left, how fun!",
+  pix_bypass: "Detectives, I have managed to bypass Nemesis temporarily...",
+  pix_clue: "Detectives, I understand you want a clue",
+  pix_cyber_hound: "Cyber Hound incoming!",
+  pix_acpo: "Don't forget ACPO",
+  pix_cant_say: "I can't tell you that in front of Nemesis!",
+  pix_box: "Have you tried looking in the box?",
+  pix_over_there: "Have you looked over there?",
+  pix_leave_found: "Remember to leave things as you found them!"
+};
+
+/* Audio: load by ID on demand (so you don't have to pre-list everything) */
+function audioFor(id){
+  return new Audio(`/audio/${id}.mp3`);
+}
+
+/* Fullscreen */
+fsBtn.addEventListener("click", async () => {
+  try { await document.documentElement.requestFullscreen(); } catch(e){}
+});
+
+/* Theme switch: Pix blue for 10s */
+function setThemeBlueFor(ms){
+  document.body.classList.add("theme-blue");
+  clearTimeout(themeTimer);
+  themeTimer = setTimeout(() => document.body.classList.remove("theme-blue"), ms);
+}
+
+/* Stop everything */
+let currentAudio = null;
+function stopAll(){
+  try{
+    if(currentAudio){
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+  }catch(e){}
+  currentAudio = null;
+  eye.classList.remove("speaking");
+}
+
+/* Unlock handler — listens to multiple event types */
+async function unlockAudio(e){
+  e?.preventDefault?.();
+
+  // Visible feedback so you can confirm the tap is registered
+  overlayText.innerHTML = "Unlocking audio…";
+
+  try{
+    // IMPORTANT: you must have this file
+    const unlock = new Audio("/audio/test.mp3");
+    unlock.volume = 0;
+    await unlock.play();
+    unlock.pause();
+    unlock.currentTime = 0;
+
+    audioEnabled = true;
+    audioUnlockedOnce = true;
+    overlay.style.display = "none";
+  }catch(err){
+    audioEnabled = false;
+    audioUnlockedOnce = false;
+
+    overlayText.innerHTML =
+      "Unlock failed.<br>" +
+      "Make sure <b>/audio/test.mp3</b> exists and is reachable on this device.<br>" +
+      "<small>Try opening it directly in the browser first.</small>";
+  }
+}
+
+/* Attach robust listeners */
+overlay.addEventListener("pointerdown", unlockAudio);
+overlay.addEventListener("touchstart", unlockAudio, { passive: false });
+overlay.addEventListener("click", unlockAudio);
+
+/* Play */
+function playClip(id){
+  if(!audioEnabled) return;
+
+  if(id.startsWith("pix_")) setThemeBlueFor(10000);
+
+  // If you want subtitles later, we can re-add them; keeping this minimal/robust for now.
+
+  stopAll();
+
+  const a = audioFor(id);
+  currentAudio = a;
+
+  eye.classList.add("speaking");
+
+  const stop = () => {
+    if(currentAudio === a) currentAudio = null;
+    eye.classList.remove("speaking");
+  };
+
+  a.addEventListener("ended", stop, { once:true });
+  a.addEventListener("pause", stop, { once:true });
+
+  a.play().catch(() => {
+    // only show overlay if we never successfully unlocked
+    if(!audioUnlockedOnce){
+      audioEnabled = false;
+      overlay.style.display = "grid";
+      overlayText.innerHTML = "Tap to enable audio.";
+    }
+    stop();
+  });
+}
+
+/* Firebase polling */
+async function poll(){
+  try{
+    const res = await fetch(DB_BASE + COMMAND_PATH + ".json", { cache:"no-store" });
+    const data = await res.json();
+    if(data && data.ts && data.ts !== lastTimestamp){
+      lastTimestamp = data.ts;
+      if(data.clip === "stop") stopAll();
+      else if(data.clip) playClip(data.clip);
+    }
+  }catch(e){}
+  setTimeout(poll, 500);
+}
+poll();
+
+/* Micro-random life */
+setInterval(() => {
+  if (eye.classList.contains("speaking")) return;
+  const x = (Math.random() - 0.5) * 0.6;
+  const y = (Math.random() - 0.5) * 0.6;
+  const s = 1 + (Math.random() * 0.01);
+  eye.style.transform = `translate(${x}%, ${y}%) scale(${s})`;
+}, 9000);
+</script>
+
+</body>
+</html>
